@@ -5,17 +5,38 @@ Inverse TicTacToe game with a field of 10x10.
 import random
 import time
 
+
+def colored(r, g, b, text):
+    return "\033[38;2;{};{};{}m{} \033[38;2;255;255;255m".format(r, g, b, text)
+
+
 board = [f"{(3 - len(str(num))) * ' '}{num}" for num in range(1, 101)]
-player_marks = ['X', '0']
+player_marks = ["X", "0"]
 
 
 def display_board(board_list):
     """A function designed to display the board."""
-    for i in range(1, 101, 10):
-        print(' | '.join(board_list[-i:-i - 10:-1]))
+
+    def disp_tile(board_list, index):
+        zero = f" | {colored(0, 255, 0, '0')}"
+        x = f" | {colored(255, 0, 0, 'X')}"
+        element = board_list[index]
+        to_print = ""
+        if element.strip() == "X":
+            to_print += x
+        elif element.strip() == "0":
+            to_print += zero
+        else:
+            to_print += f" |{(3 - len(str(element))) * ' '}{element}"
+        if index % 10 == 0:
+            to_print += "\n"
+        print(to_print, end="")
+
+    for i in range(-1, -101, -1):
+        disp_tile(board_list, i)
 
 
-def choose_mark():
+def choose_mark(player_marks):
     """A function which returns the player's chosen marker, and then the computer's."""
     chosen_mark = ""
     while chosen_mark not in player_marks:
@@ -30,7 +51,7 @@ def choose_first_turn():
 
 def check_empty_tile(board_list, index):
     """Check if a tile is empty. I doubt some of these functions even need comments."""
-    return not ("X" in board_list[index] or "0" in board_list[index])
+    return not ("X" == board_list[index].strip() or "0" == board_list[index].strip())
 
 
 def mark_tile(board_list, tile_index, player_mark):
@@ -47,26 +68,64 @@ def check_win(board_list, index):
     """Checks for a win condition. Or loss, in this case..."""
 
     # returns True if five of the same markers come in a row in a given list.
-    def five_in_row(l):
-        if len(l) > 4:
-            for i in range(len(l) - 4):
-                if l[i].strip() == l[i + 1].strip() == l[i + 2].strip() == l[i + 3].strip() == l[i + 4].strip():
+    def five_in_row(formed_list):
+        if len(formed_list) > 4:
+            for i in range(len(formed_list) - 4):
+                if formed_list[i].strip() == formed_list[i + 1].strip() == formed_list[i + 2].strip() \
+                        == formed_list[i + 3].strip() == formed_list[i + 4].strip():
                     return True
         return False
 
     # all the numbers in range of 5 horizontally
-    horiz_from = lambda n: n - n % 10 if n % 10 < 4 else n - 4
-    horiz_to = lambda n: n + 9 - n % 10 if n % 10 > 5 else n + 4
+    def horiz_from(n):
+        if n % 10 < 4:
+            return n - n % 10
+        else:
+            return n - 4
+
+    def horiz_to(n):
+        if n % 10 > 5:
+            return n + 9 - n % 10
+        else:
+            return n + 4
 
     # same but vertically
-    vert_to = lambda n: n + 10 * (9 - n // 10) if n // 10 > 5 else n + 40
-    vert_from = lambda n: n % 10 if n < 40 else n - 40
+    def vert_to(n):
+        if n // 10 > 5:
+            return n + 10 * (9 - n // 10)
+        else:
+            return n + 40
+
+    def vert_from(n):
+        if n < 40:
+            return n % 10
+        else:
+            return n - 40
 
     # same but diagonally
-    diag_right_to = lambda n: n + 9 * (min(9 - n // 10, n % 10)) if n // 10 > 6 or n % 10 < 4 else n + 36
-    diag_right_from = lambda n: n - 9 * (min(9 - n % 10, n // 10)) if n % 10 > 5 or n // 10 < 4 else n - 36
-    diag_left_to = lambda n: n + 11 * min(9 - n // 10, 9 - n % 10) if n % 10 > 5 or n // 10 > 5 else n + 44
-    diag_left_from = lambda n: n - 11 * min(n % 10, n // 10) if n % 10 < 5 or n // 10 < 4 else n - 44
+    def diag_right_to(n):
+        if n // 10 > 6 or n % 10 < 4:
+            return n + 9 * (min(9 - n // 10, n % 10))
+        else:
+            return n + 36
+
+    def diag_right_from(n):
+        if n % 10 > 5 or n // 10 < 4:
+            return n - 9 * (min(9 - n % 10, n // 10))
+        else:
+            return n - 36
+
+    def diag_left_to(n):
+        if n % 10 > 5 or n // 10 > 5:
+            return n + 11 * min(9 - n // 10, 9 - n % 10)
+        else:
+            return n + 44
+
+    def diag_left_from(n):
+        if n % 10 < 5 or n // 10 < 4:
+            return n - 11 * min(n % 10, n // 10)
+        else:
+            return n - 44
 
     return (
             five_in_row(board_list[horiz_from(index):horiz_to(index) + 1])
@@ -94,17 +153,18 @@ def player_choice(board_list, chosen_mark):
     """Lets the player choose the next available tile to mark."""
 
     index = 0
+    while True:
+        while index not in [num for num in range(1, 101)]:
+            try:
+                index = int(input(f"Player '{chosen_mark}', please choose a tile from 1 to 100: "))
+            except ValueError as exc:
+                print(f"Incorrect value: {exc}. Please, try again.")
 
-    while index not in [num for num in range(1, 101)]:
-        try:
-            index = int(input(f"Player '{chosen_mark}', please choose a tile from 1 to 100: "))
-        except ValueError as exc:
-            print(f"Incorrect value: {exc}. Please, try again.")
-
-    if check_empty_tile(board_list, index - 1):
-        return index - 1
-
-    return False
+        if check_empty_tile(board_list, index - 1):
+            return index - 1
+        else:
+            print("Whoops, this tile is already marked. Please, choose another.")
+            index = 0
 
 
 def replay():
@@ -132,7 +192,8 @@ def switch_player(chosen_mark):
 def check_game_finished(board_list, index):
     if check_win(board_list, index):
         print(
-            f"Player {board_list[index].strip()} has lost! Congratulations, player {[x for x in player_marks if x != board_list[index].strip()][0]}!")
+            f"Player {board_list[index].strip()} has lost! Congratulations, "
+            f"player {[x for x in player_marks if x != board_list[index].strip()][0]}!")
         return True
     elif full_board_marked(board_list):
         print("Ladies and gentlemen, it's a draw!")
@@ -143,7 +204,7 @@ def check_game_finished(board_list, index):
 
 print("Welcome to the game of inverse TicTacToe")
 
-player_marks = choose_mark()
+player_marks = choose_mark(player_marks)
 player_mark = player_marks[0]
 computer_mark = player_marks[1]
 current_player_mark = choose_first_turn()
@@ -167,7 +228,9 @@ while True:
             break
         else:
             board = [f"{(3 - len(str(num))) * ' '}{num}" for num in range(1, 101)]
-            player_marks = choose_mark()
+            player_marks = choose_mark(player_marks)
+            player_mark = player_marks[0]
+            computer_mark = player_marks[1]
             current_player_mark = choose_first_turn()
     else:
         current_player_mark = switch_player(current_player_mark)
